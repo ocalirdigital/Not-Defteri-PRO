@@ -935,35 +935,6 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         </button>
       </div>
 
-      {/* Quick Paste Notification / Hint */}
-      {note.canvasItems.length === 0 && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 text-center px-4">
-          <div className="p-4 rounded-2xl bg-[#16161b]/80 border border-[#262630] backdrop-blur-sm max-w-sm pointer-events-auto shadow-2xl">
-            <ImageIcon size={32} className="text-amber-500 mx-auto mb-2" />
-            <h3 className="text-sm font-semibold text-zinc-200 mb-1">
-              Serbest Görsel Tuvaline Hoş Geldiniz
-            </h3>
-            <p className="text-xs text-zinc-400 mb-3">
-              Herhangi bir görseli kopyalayıp doğrudan <kbd className="px-1.5 py-0.5 bg-[#22222b] text-amber-400 rounded font-mono text-[11px]">Ctrl+V</kbd> ile yapıştırabilir veya bilgisayarınızdan sürükleyip bırakabilirsiniz.
-            </p>
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={onOpenImageUpload}
-                className="px-3 py-1.5 text-xs font-medium text-black bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors"
-              >
-                Fotoğraf Yükle
-              </button>
-              <button
-                onClick={() => handleAddSticky('amber')}
-                className="px-3 py-1.5 text-xs font-medium text-zinc-200 bg-[#22222b] hover:bg-[#2c2c38] rounded-lg transition-colors"
-              >
-                + Not Ekle
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main Canvas Viewport with transform */}
       <div
         className="absolute inset-0 origin-top-left pointer-events-auto"
