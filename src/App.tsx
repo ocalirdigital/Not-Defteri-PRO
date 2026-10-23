@@ -489,7 +489,7 @@ export default function App() {
     `;
 
     handleUpdateNote({
-      content: activeNote.viewMode === 'document' ? (activeNote.content || '') + imgHtml : activeNote.content,
+      content: (activeNote.content || '') + imgHtml,
       canvasItems: [...activeNote.canvasItems, newItem],
       updatedAt: new Date().toISOString(),
     });

@@ -163,6 +163,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const highlightMenuRef = useRef<HTMLDivElement>(null);
   const textColorMenuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // States
   const [showHighlightMenu, setShowHighlightMenu] = useState(false);
@@ -374,13 +375,13 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         return;
       }
 
-      const formatted = convertContentToHtml(note.content);
+      const formatted = convertContentToHtml(note.content || '');
       if (editorRef.current.innerHTML !== formatted) {
         editorRef.current.innerHTML = formatted;
-        setLastSavedContent(note.content);
+        setLastSavedContent(note.content || '');
       }
     }
-  }, [note.id]);
+  }, [note.id, note.content]);
 
   // Close menus on outside click
   useEffect(() => {
@@ -553,6 +554,126 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   };
 
   /**
+   * Insert image inline into the document text at the cursor position (with <p><br></p> below for continued typing)
+   */
+  const insertImageAtCursor = useCallback(
+    (src: string, caption = '') => {
+      if (!editorRef.current) return;
+      const el = editorRef.current;
+      el.focus();
+
+      const imgHtml = `
+        <div class="note-image-container my-4 select-none" contenteditable="false">
+          <img src="${src}" class="rounded-xl max-w-full max-h-[460px] mx-auto shadow-xl border border-[#2e2e3e] object-contain block hover:scale-[1.01] transition-transform" alt="${caption || 'Görsel'}" />
+          <div contenteditable="true" class="text-center text-xs text-zinc-400 mt-1.5 outline-none hover:text-zinc-200">${caption || 'Fotoğraf Açıklaması'}</div>
+        </div>
+        <p><br></p>
+      `;
+
+      let inserted = false;
+      try {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0 && el.contains(sel.anchorNode)) {
+          inserted = document.execCommand('insertHTML', false, imgHtml);
+        }
+      } catch {
+        inserted = false;
+      }
+
+      if (!inserted) {
+        el.innerHTML = (el.innerHTML || '<p><br></p>') + imgHtml;
+      }
+
+      // Automatically move cursor to the blank paragraph immediately following the inserted photo
+      try {
+        const range = document.createRange();
+        const sel = window.getSelection();
+        const lastP = el.lastElementChild;
+        if (lastP) {
+          range.selectNodeContents(lastP);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      } catch {}
+
+      handleEditorChange();
+
+      // Ensure it is also registered in canvasItems for seamless dual-mode canvas viewing
+      const existsInCanvas = (note.canvasItems || []).some(
+        (it) => it.type === 'image' && it.src === src
+      );
+      if (!existsInCanvas) {
+        const existingImages = (note.canvasItems || []).filter((it) => it.type === 'image');
+        let targetX = 80;
+        let targetY = 80;
+        if (existingImages.length > 0) {
+          const last = existingImages[existingImages.length - 1];
+          targetX = last.x + (last.width || 360) + 30;
+          targetY = last.y;
+          if (targetX > 1200) {
+            targetX = 80;
+            targetY = last.y + 320;
+          }
+        }
+        const maxZ = Math.max(0, ...(note.canvasItems || []).map((it) => it.zIndex));
+        const newItem: CanvasItem = {
+          id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: 'image',
+          x: targetX,
+          y: targetY,
+          width: 360,
+          zIndex: maxZ + 1,
+          src,
+          caption: caption || 'Eklenen Fotoğraf',
+        };
+
+        onUpdateNote({
+          canvasItems: [...(note.canvasItems || []), newItem],
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    },
+    [note.canvasItems, handleEditorChange, onUpdateNote]
+  );
+
+  /**
+   * File input picker handler (triggered from toolbar ribbon button)
+   */
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          insertImageAtCursor(base64, file.name.replace(/\.[^/.]+$/, ''));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  };
+
+  /**
+   * Direct Drag & Drop image files onto Document Editor
+   */
+  const handleDropImage = (e: React.DragEvent) => {
+    const files = e.dataTransfer.files;
+    if (files && files[0] && files[0].type.startsWith('image/')) {
+      e.preventDefault();
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target?.result as string;
+        if (base64) {
+          insertImageAtCursor(base64, files[0].name.replace(/\.[^/.]+$/, ''));
+        }
+      };
+      reader.readAsDataURL(files[0]);
+    }
+  };
+
+  /**
    * Handle image pasting directly from clipboard - inserts inline right at cursor!
    */
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -568,55 +689,42 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
           reader.onload = (event) => {
             const base64 = event.target?.result as string;
             if (base64) {
-              // 1. Insert directly into editor at cursor position (under text, inline, wherever cursor is!)
-              const imgHtml = `
-                <div class="note-image-container my-4 select-none" contenteditable="false">
-                  <img src="${base64}" class="rounded-xl max-w-full max-h-[460px] mx-auto shadow-xl border border-[#2e2e3e] object-contain block hover:scale-[1.01] transition-transform" alt="Görsel" />
-                  <div contenteditable="true" class="text-center text-xs text-zinc-400 mt-1.5 outline-none hover:text-zinc-200">Fotoğraf Açıklaması</div>
-                </div>
-                <p><br></p>
-              `;
-              editorRef.current?.focus();
-              document.execCommand('insertHTML', false, imgHtml);
-              handleEditorChange();
-
-              // 2. Also register in canvasItems with smart non-overlapping side-by-side positioning
-              const existingImages = note.canvasItems.filter((it) => it.type === 'image');
-              let targetX = 80;
-              let targetY = 80;
-              if (existingImages.length > 0) {
-                const last = existingImages[existingImages.length - 1];
-                targetX = last.x + (last.width || 360) + 30;
-                targetY = last.y;
-                if (targetX > 1200) {
-                  targetX = 80;
-                  targetY = last.y + 320;
-                }
-              }
-
-              const maxZ = Math.max(0, ...note.canvasItems.map((it) => it.zIndex));
-              const newItem: CanvasItem = {
-                id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                type: 'image',
-                x: targetX,
-                y: targetY,
-                width: 360,
-                zIndex: maxZ + 1,
-                src: base64,
-                caption: 'Eklenen Fotoğraf',
-              };
-
-              onUpdateNote({
-                canvasItems: [...note.canvasItems, newItem],
-                updatedAt: new Date().toISOString(),
-              });
+              insertImageAtCursor(
+                base64,
+                file.name?.replace(/\.[^/.]+$/, '') || 'Yapıştırılan Fotoğraf'
+              );
             }
           };
           reader.readAsDataURL(file);
         }
-        break;
+        return;
       }
     }
+  };
+
+  // Canvas images that are not yet embedded in the document text flow
+  const uninsertedCanvasImages = useMemo(() => {
+    const images = (note.canvasItems || []).filter((it) => it.type === 'image' && it.src);
+    const content = note.content || '';
+    return images.filter((img) => !content.includes(img.src!));
+  }, [note.canvasItems, note.content]);
+
+  // Insert all uninserted canvas images directly into document content
+  const handleInsertAllCanvasImages = () => {
+    if (uninsertedCanvasImages.length === 0 || !editorRef.current) return;
+    let appendedHtml = '';
+    uninsertedCanvasImages.forEach((img) => {
+      appendedHtml += `
+        <div class="note-image-container my-4 select-none" contenteditable="false">
+          <img src="${img.src}" class="rounded-xl max-w-full max-h-[460px] mx-auto shadow-xl border border-[#2e2e3e] object-contain block hover:scale-[1.01] transition-transform" alt="${img.caption || 'Görsel'}" />
+          <div contenteditable="true" class="text-center text-xs text-zinc-400 mt-1.5 outline-none hover:text-zinc-200">${img.caption || 'Fotoğraf Açıklaması'}</div>
+        </div>
+        <p><br></p>
+      `;
+    });
+
+    editorRef.current.innerHTML = (editorRef.current.innerHTML || '<p><br></p>') + appendedHtml;
+    handleEditorChange();
   };
 
   // Handle image caption edit
@@ -939,6 +1047,27 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
               </>
             )}
           </button>
+
+          {/* Fotoğraf Ekle Butonu - Metin içine inline görsel ekler */}
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-[#2b2b36] bg-[#1c1c24] text-zinc-300 hover:text-amber-400 hover:bg-[#252532] text-xs font-medium transition-all shrink-0"
+            title="Yazı Arasına Fotoğraf Ekle (veya doğrudan Ctrl+V yapıştırın)"
+          >
+            <ImageIcon size={13} className="text-amber-400" />
+            <span className="text-[11px] hidden sm:inline text-zinc-300">Fotoğraf Ekle</span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileInputChange}
+          />
         </div>
       </div>
 
@@ -1120,9 +1249,56 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                 handleEditorChange();
               }
             }}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDropImage}
             data-placeholder="Notlarınızı buraya yazın veya doğrudan fotoğraf yapıştırın (Ctrl+V)..."
             className="w-full text-base text-zinc-200 focus:outline-none leading-relaxed font-sans min-h-[360px] empty:before:content-[attr(data-placeholder)] empty:before:text-zinc-600 empty:before:pointer-events-none prose-invert [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-zinc-100 [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-zinc-200 [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-zinc-300 [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:my-1.5 [&_blockquote]:border-l-2 [&_blockquote]:border-amber-500/70 [&_blockquote]:bg-[#16161e]/60 [&_blockquote]:pl-3.5 [&_blockquote]:py-1.5 [&_blockquote]:my-2.5 [&_blockquote]:rounded-r [&_blockquote]:italic [&_blockquote]:text-zinc-300 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_code]:bg-[#202028] [&_code]:text-amber-300 [&_code]:font-mono [&_code]:text-xs [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:border [&_code]:border-[#2e2e3a]"
           />
+
+          {/* Photos that exist on Canvas but are not yet embedded into the text flow */}
+          {uninsertedCanvasImages.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-[#23232c] space-y-3 select-none">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <ImageIcon size={14} className="text-amber-400" />
+                  Tuvalde Ekli Olan Fotoğraflar ({uninsertedCanvasImages.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={handleInsertAllCanvasImages}
+                  className="px-2.5 py-1 text-xs font-semibold text-black bg-amber-500 hover:bg-amber-400 rounded-lg transition-colors shadow-sm"
+                  title="Bu fotoğrafları doğrudan yukarıdaki metnin altına ekle"
+                >
+                  Tümünü Metnin Altına Ekle
+                </button>
+              </div>
+              <p className="text-[11px] text-zinc-500">
+                Bu fotoğraflar tuvalde yer alıyor. Metninizin içine dahil etmek için fotoğrafa veya yukarıdaki butona tıklayın:
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {uninsertedCanvasImages.map((img) => (
+                  <div
+                    key={img.id}
+                    onClick={() => insertImageAtCursor(img.src!, img.caption)}
+                    className="relative group bg-[#16161c] rounded-xl border border-[#2b2b36] hover:border-amber-500/70 overflow-hidden shadow-lg cursor-pointer transition-all hover:scale-[1.02]"
+                    title="Bu fotoğrafı metin içine ekle"
+                  >
+                    <div className="aspect-video w-full bg-[#0e0e12] flex items-center justify-center overflow-hidden">
+                      <img
+                        src={img.src}
+                        alt={img.caption || 'Fotoğraf'}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="p-2 bg-[#17171e] border-t border-[#23232c] flex items-center justify-between text-xs">
+                      <span className="text-zinc-300 truncate text-[11px] font-medium">{img.caption || 'Fotoğraf'}</span>
+                      <span className="text-amber-400 font-semibold text-[10px] shrink-0 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30">+ Ekle</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
