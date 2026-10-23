@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#141418"/>
+  <rect x="24" y="24" width="464" height="464" rx="88" fill="#18181f" stroke="#2a2a36" stroke-width="8"/>
+  <!-- Gold Header Accent -->
+  <path d="M48 112 C 48 76, 76 48, 112 48 L 400 48 C 436 48, 464 76, 464 112 L 464 140 L 48 140 Z" fill="#24211a"/>
+  <circle cx="100" cy="94" r="14" fill="#f59e0b"/>
+  <circle cx="140" cy="94" r="10" fill="#3f3f4c"/>
+  <circle cx="172" cy="94" r="10" fill="#3f3f4c"/>
+  <!-- Note Lines -->
+  <rect x="96" y="200" width="320" height="24" rx="12" fill="#f59e0b"/>
+  <rect x="96" y="256" width="240" height="18" rx="9" fill="#3f3f4c"/>
+  <rect x="96" y="304" width="280" height="18" rx="9" fill="#3f3f4c"/>
+  <rect x="96" y="352" width="180" height="18" rx="9" fill="#2c2c38"/>
+  <!-- Canvas Pin Dot -->
+  <circle cx="400" cy="390" r="32" fill="#f59e0b"/>
+  <path d="M388 390 L 412 390 M 400 378 L 400 402" stroke="#000000" stroke-width="6" stroke-linecap="round"/>
+</svg>
