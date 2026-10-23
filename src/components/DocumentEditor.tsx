@@ -367,11 +367,170 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     };
   }, [note.id, stopListening]);
 
+  // Dedicated helper to remove an image container from the editor and note state
+  const handleDeleteImageFromEditor = useCallback(
+    (container: HTMLElement) => {
+      if (!container) return;
+      const img = container.querySelector('img');
+      const imgSrc = img?.getAttribute('src');
+
+      // Check if next sibling is an empty paragraph created right after the image, remove it too
+      const nextSibling = container.nextElementSibling;
+      if (
+        nextSibling &&
+        nextSibling.tagName === 'P' &&
+        (!nextSibling.textContent?.trim() || nextSibling.innerHTML === '<br>')
+      ) {
+        nextSibling.remove();
+      }
+
+      // Remove from DOM
+      container.remove();
+
+      if (editorRef.current) {
+        const currentHtml = editorRef.current.innerHTML;
+        isInternalChangeRef.current = true;
+        setLastSavedContent(currentHtml);
+
+        const updatedCanvasItems = imgSrc
+          ? (note.canvasItems || []).filter((it) => it.src !== imgSrc)
+          : note.canvasItems;
+
+        onUpdateNote({
+          content: currentHtml,
+          canvasItems: updatedCanvasItems,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    },
+    [note.canvasItems, onUpdateNote]
+  );
+
+  // Helper to ensure all image containers inside the contenteditable have the delete button and are centered
+  const attachDeleteButtons = useCallback(() => {
+    if (!editorRef.current) return;
+    const containers = editorRef.current.querySelectorAll('.note-image-container');
+    containers.forEach((rawContainer) => {
+      const container = rawContainer as HTMLElement;
+      // Guarantee proper flex centering on container
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
+      container.style.alignItems = 'center';
+      container.style.justifyContent = 'center';
+      container.style.textAlign = 'center';
+      container.style.margin = '1.5rem auto';
+      container.style.width = '100%';
+      container.className =
+        'note-image-container my-6 select-none flex flex-col items-center justify-center text-center w-full relative group/img';
+
+      const img = container.querySelector('img');
+      if (!img) return;
+
+      img.style.margin = '0 auto';
+      img.style.display = 'block';
+      img.style.borderRadius = '0.75rem';
+      img.style.maxWidth = '100%';
+      img.style.maxHeight = '460px';
+
+      // Ensure wrapper around img exists for positioning the delete button
+      let wrapper = container.querySelector('.img-relative-wrapper') as HTMLElement | null;
+      if (!wrapper) {
+        wrapper = container.querySelector('.relative.inline-block') as HTMLElement | null;
+      }
+      if (!wrapper) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'img-relative-wrapper relative inline-block max-w-full';
+        wrapper.style.position = 'relative';
+        wrapper.style.display = 'inline-block';
+        wrapper.style.maxWidth = '100%';
+        img.parentNode?.insertBefore(wrapper, img);
+        wrapper.appendChild(img);
+      } else {
+        wrapper.classList.add('img-relative-wrapper');
+        wrapper.style.position = 'relative';
+        wrapper.style.display = 'inline-block';
+        wrapper.style.maxWidth = '100%';
+      }
+
+      // Check if button exists or create it
+      let btn = container.querySelector('.delete-img-btn') as HTMLElement | null;
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('data-delete-img', 'true');
+        btn.className =
+          'delete-img-btn absolute top-2.5 right-2.5 bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded-lg opacity-90 group-hover/img:opacity-100 transition-all shadow-xl cursor-pointer border border-white/20 hover:scale-105 z-30 flex items-center gap-1.5 text-xs font-semibold backdrop-blur-md';
+        btn.title = 'Fotoğrafı Kaldır';
+        btn.innerHTML =
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg><span>Kaldır</span>';
+        wrapper.appendChild(btn);
+      } else {
+        btn.className =
+          'delete-img-btn absolute top-2.5 right-2.5 bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded-lg opacity-90 group-hover/img:opacity-100 transition-all shadow-xl cursor-pointer border border-white/20 hover:scale-105 z-30 flex items-center gap-1.5 text-xs font-semibold backdrop-blur-md';
+      }
+
+      // Direct event binding to guarantee instantaneous removal
+      btn.onmousedown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleDeleteImageFromEditor(container);
+      };
+
+      // Ensure caption is centered directly under the image
+      const captionDiv = container.querySelector('[contenteditable="true"]') as HTMLElement | null;
+      if (captionDiv) {
+        captionDiv.style.textAlign = 'center';
+        captionDiv.style.marginTop = '0.5rem';
+        captionDiv.style.width = '100%';
+      }
+    });
+  }, [handleDeleteImageFromEditor]);
+
+  // Capture-phase native click and mousedown listeners on editorRef to guarantee delete button execution
+  useEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+
+    const handleNativeClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const btn = target?.closest?.('[data-delete-img="true"], .delete-img-btn');
+      if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const container = btn.closest('.note-image-container') as HTMLElement | null;
+        if (container) {
+          handleDeleteImageFromEditor(container);
+        }
+      }
+    };
+
+    const handleNativeMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const btn = target?.closest?.('[data-delete-img="true"], .delete-img-btn');
+      if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    el.addEventListener('mousedown', handleNativeMouseDown, true);
+    el.addEventListener('click', handleNativeClick, true);
+    return () => {
+      el.removeEventListener('mousedown', handleNativeMouseDown, true);
+      el.removeEventListener('click', handleNativeClick, true);
+    };
+  }, [handleDeleteImageFromEditor]);
+
   // Sync editor content with note.content
   useEffect(() => {
     if (editorRef.current) {
       if (isInternalChangeRef.current) {
         isInternalChangeRef.current = false;
+        attachDeleteButtons();
         return;
       }
 
@@ -380,8 +539,10 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         editorRef.current.innerHTML = formatted;
         setLastSavedContent(note.content || '');
       }
+
+      attachDeleteButtons();
     }
-  }, [note.id, note.content]);
+  }, [note.id, note.content, attachDeleteButtons]);
 
   // Close menus on outside click
   useEffect(() => {
@@ -563,9 +724,22 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       el.focus();
 
       const imgHtml = `
-        <div class="note-image-container my-4 select-none" contenteditable="false">
-          <img src="${src}" class="rounded-xl max-w-full max-h-[460px] mx-auto shadow-xl border border-[#2e2e3e] object-contain block hover:scale-[1.01] transition-transform" alt="${caption || 'Görsel'}" />
-          <div contenteditable="true" class="text-center text-xs text-zinc-400 mt-1.5 outline-none hover:text-zinc-200">${caption || 'Fotoğraf Açıklaması'}</div>
+        <div class="note-image-container my-6 select-none flex flex-col items-center justify-center text-center w-full" contenteditable="false" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin: 1.5rem auto; width: 100%;">
+          <div class="relative inline-flex flex-col items-center max-w-full group/img" style="display: inline-flex; flex-direction: column; align-items: center; max-width: 100%;">
+            <div class="img-relative-wrapper relative inline-block max-w-full" style="position: relative; display: inline-block; max-width: 100%;">
+              <img src="${src}" class="rounded-xl max-w-full max-h-[460px] mx-auto shadow-2xl border border-[#2e2e3e] object-contain block hover:scale-[1.005] transition-transform" alt="${caption || 'Görsel'}" style="margin: 0 auto; display: block; border-radius: 0.75rem; max-width: 100%; max-height: 460px;" />
+              <button
+                type="button"
+                data-delete-img="true"
+                class="delete-img-btn absolute top-2.5 right-2.5 bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded-lg opacity-90 group-hover/img:opacity-100 transition-all shadow-xl cursor-pointer border border-white/20 hover:scale-105 z-30 flex items-center gap-1.5 text-xs font-semibold backdrop-blur-md"
+                title="Fotoğrafı Kaldır"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                <span>Kaldır</span>
+              </button>
+            </div>
+            <div contenteditable="true" class="text-center text-xs text-zinc-400 mt-2 px-2 py-0.5 outline-none hover:text-zinc-200 w-full" style="text-align: center; margin-top: 0.5rem; width: 100%;" placeholder="Fotoğraf açıklaması ekleyin...">${caption || 'Fotoğraf Açıklaması'}</div>
+          </div>
         </div>
         <p><br></p>
       `;
@@ -583,6 +757,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       if (!inserted) {
         el.innerHTML = (el.innerHTML || '<p><br></p>') + imgHtml;
       }
+
+      attachDeleteButtons();
 
       // Automatically move cursor to the blank paragraph immediately following the inserted photo
       try {
@@ -715,15 +891,29 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     let appendedHtml = '';
     uninsertedCanvasImages.forEach((img) => {
       appendedHtml += `
-        <div class="note-image-container my-4 select-none" contenteditable="false">
-          <img src="${img.src}" class="rounded-xl max-w-full max-h-[460px] mx-auto shadow-xl border border-[#2e2e3e] object-contain block hover:scale-[1.01] transition-transform" alt="${img.caption || 'Görsel'}" />
-          <div contenteditable="true" class="text-center text-xs text-zinc-400 mt-1.5 outline-none hover:text-zinc-200">${img.caption || 'Fotoğraf Açıklaması'}</div>
+        <div class="note-image-container my-6 select-none flex flex-col items-center justify-center text-center w-full" contenteditable="false" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin: 1.5rem auto; width: 100%;">
+          <div class="relative inline-flex flex-col items-center max-w-full group/img" style="display: inline-flex; flex-direction: column; align-items: center; max-width: 100%;">
+            <div class="img-relative-wrapper relative inline-block max-w-full" style="position: relative; display: inline-block; max-width: 100%;">
+              <img src="${img.src}" class="rounded-xl max-w-full max-h-[460px] mx-auto shadow-2xl border border-[#2e2e3e] object-contain block hover:scale-[1.005] transition-transform" alt="${img.caption || 'Görsel'}" style="margin: 0 auto; display: block; border-radius: 0.75rem; max-width: 100%; max-height: 460px;" />
+              <button
+                type="button"
+                data-delete-img="true"
+                class="delete-img-btn absolute top-2.5 right-2.5 bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded-lg opacity-90 group-hover/img:opacity-100 transition-all shadow-xl cursor-pointer border border-white/20 hover:scale-105 z-30 flex items-center gap-1.5 text-xs font-semibold backdrop-blur-md"
+                title="Fotoğrafı Kaldır"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                <span>Kaldır</span>
+              </button>
+            </div>
+            <div contenteditable="true" class="text-center text-xs text-zinc-400 mt-2 px-2 py-0.5 outline-none hover:text-zinc-200 w-full" style="text-align: center; margin-top: 0.5rem; width: 100%;" placeholder="Fotoğraf açıklaması ekleyin...">${img.caption || 'Fotoğraf Açıklaması'}</div>
+          </div>
         </div>
         <p><br></p>
       `;
     });
 
     editorRef.current.innerHTML = (editorRef.current.innerHTML || '<p><br></p>') + appendedHtml;
+    attachDeleteButtons();
     handleEditorChange();
   };
 
@@ -740,9 +930,24 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   // Remove image
   const handleRemoveImage = (itemId: string) => {
     onUpdateNote({
-      canvasItems: note.canvasItems.filter((item) => item.id !== itemId),
+      canvasItems: (note.canvasItems || []).filter((item) => item.id !== itemId),
       updatedAt: new Date().toISOString(),
     });
+  };
+
+  // Delegated click handler on the contentEditable editor to handle image deletion
+  const handleEditorClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const deleteBtn = target.closest('[data-delete-img="true"], .delete-img-btn');
+    if (deleteBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const container = deleteBtn.closest('.note-image-container') as HTMLElement | null;
+      if (container) {
+        handleDeleteImageFromEditor(container);
+      }
+    }
   };
 
   // Word & character counts
@@ -1219,6 +1424,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             ref={editorRef}
             contentEditable
             suppressContentEditableWarning
+            onClick={handleEditorClick}
             onInput={handleEditorChange}
             onPaste={handlePaste}
             onKeyDown={(e) => {
@@ -1283,6 +1489,17 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                     className="relative group bg-[#16161c] rounded-xl border border-[#2b2b36] hover:border-amber-500/70 overflow-hidden shadow-lg cursor-pointer transition-all hover:scale-[1.02]"
                     title="Bu fotoğrafı metin içine ekle"
                   >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveImage(img.id);
+                      }}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/80 hover:bg-red-600 text-zinc-300 hover:text-white transition-all shadow-md z-10 opacity-0 group-hover:opacity-100 border border-white/10"
+                      title="Bu fotoğrafı sil"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                     <div className="aspect-video w-full bg-[#0e0e12] flex items-center justify-center overflow-hidden">
                       <img
                         src={img.src}

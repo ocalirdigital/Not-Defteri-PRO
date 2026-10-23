@@ -479,11 +479,24 @@ export default function App() {
       caption: caption || 'Fotoğraf Açıklaması',
     };
 
-    // If active note is in document mode, append the image right into the document text (under the text)
+    // Append the image right into the document text so it displays seamlessly in document mode as well
     const imgHtml = `
-      <div class="note-image-container my-3 select-none" contenteditable="false">
-        <img src="${src}" class="rounded-xl max-w-full max-h-[460px] mx-auto shadow-xl border border-[#2e2e3e] object-contain block hover:scale-[1.01] transition-transform" alt="${caption || 'Görsel'}" />
-        <div contenteditable="true" class="text-center text-xs text-zinc-400 mt-1.5 outline-none hover:text-zinc-200">${caption || 'Fotoğraf Açıklaması'}</div>
+      <div class="note-image-container my-6 select-none flex flex-col items-center justify-center text-center w-full" contenteditable="false" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin: 1.5rem auto; width: 100%;">
+        <div class="relative inline-flex flex-col items-center max-w-full group/img" style="display: inline-flex; flex-direction: column; align-items: center; max-width: 100%;">
+          <div class="relative inline-block max-w-full" style="position: relative; display: inline-block; max-width: 100%;">
+            <img src="${src}" class="rounded-xl max-w-full max-h-[460px] mx-auto shadow-2xl border border-[#2e2e3e] object-contain block hover:scale-[1.005] transition-transform" alt="${caption || 'Görsel'}" style="margin: 0 auto; display: block; border-radius: 0.75rem; max-width: 100%; max-height: 460px;" />
+            <button
+              type="button"
+              data-delete-img="true"
+              class="delete-img-btn absolute top-2.5 right-2.5 bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded-lg opacity-90 group-hover/img:opacity-100 transition-all shadow-xl cursor-pointer border border-white/20 hover:scale-105 z-30 flex items-center gap-1.5 text-xs font-semibold backdrop-blur-md"
+              title="Fotoğrafı Kaldır"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+              <span>Kaldır</span>
+            </button>
+          </div>
+          <div contenteditable="true" class="text-center text-xs text-zinc-400 mt-2 px-2 py-0.5 outline-none hover:text-zinc-200 w-full" style="text-align: center; margin-top: 0.5rem; width: 100%;" placeholder="Fotoğraf açıklaması ekleyin...">${caption || 'Fotoğraf Açıklaması'}</div>
+        </div>
       </div>
       <p><br></p>
     `;

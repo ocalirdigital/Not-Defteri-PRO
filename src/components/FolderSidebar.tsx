@@ -262,10 +262,16 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
 
       {/* Bottom Storage & Status */}
       <div className="p-3 border-t border-[#1e1e24] text-[11px] text-zinc-500 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Yerel Kayıt Aktif" />
-          <span className="text-[10px] text-zinc-400 font-mono tracking-tight">ocalir labs</span>
-        </div>
+        <a
+          href="https://t.me/ocalirdigital"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 hover:opacity-90 transition-opacity group cursor-pointer"
+          title="Telegram üzerinden Ocalir Labs ile iletişime geçin (https://t.me/ocalirdigital)"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 group-hover:bg-amber-400 group-hover:scale-125 transition-all" />
+          <span className="text-[10px] text-zinc-400 group-hover:text-amber-400 font-mono tracking-tight transition-colors">ocalir labs</span>
+        </a>
         <a
           href="https://checkout.dodopayments.com/buy/pdt_0NqNaai72jdmYgFMZLV0j?quantity=1"
           target="_blank"

@@ -193,9 +193,6 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
           <span className="font-semibold text-sm tracking-tight text-zinc-200">
             Not Defteri Pro
           </span>
-          <span className="text-[10px] font-mono tracking-wider font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded select-none">
-            ocalir labs
-          </span>
           {isFocusMode ? (
             <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">
               Odak Modu
