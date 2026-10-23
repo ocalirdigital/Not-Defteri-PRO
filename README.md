@@ -2,9 +2,10 @@
 
 Modern, minimalist ve güçlü bir masaüstü seviyesinde not alma ve görsel tuval uygulaması. Zengin metin düzenleme (WYSIWYG), sesli not dikte etme (mikrofonla konuşarak yazma), serbest vektör tuval çizimi ve gelişmiş görsel yönetimini tek bir çatı altında birleştirir.
 
-[![React](https://img.shields.io/badge/React-18-blue.svg?logo=react&style=flat-square)](https://reactjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue.svg?logo=react&style=flat-square)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6.svg?logo=typescript&style=flat-square)](https://www.typescriptlang.org/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC.svg?logo=tailwind-css&style=flat-square)](https://tailwindcss.com/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS_v4-38B2AC.svg?logo=tailwind-css&style=flat-square)](https://tailwindcss.com/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF.svg?logo=vite&style=flat-square)](https://vite.dev/)
 [![Vercel](https://img.shields.io/badge/Vercel-Uyumlu-black?logo=vercel&style=flat-square)](https://vercel.com)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=githubsponsors&style=flat-square)](https://github.com/sponsors/ocalirdigital)
 [![Dodo Payments](https://img.shields.io/badge/Bağış-Dodo_Payments-FF6B6B?logo=heart&style=flat-square)](https://checkout.dodopayments.com/buy/pdt_0NqNaai72jdmYgFMZLV0j?quantity=1)
