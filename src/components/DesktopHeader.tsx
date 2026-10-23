@@ -22,7 +22,9 @@ import {
   Copy,
   ExternalLink,
   Keyboard,
-  HelpCircle
+  HelpCircle,
+  Coffee,
+  Heart
 } from 'lucide-react';
 import { Note } from '../types';
 
@@ -330,6 +332,18 @@ export const DesktopHeader: React.FC<DesktopHeaderProps> = ({
             >
               <Monitor size={15} className="text-amber-400" />
             </button>
+
+            {/* Bağış / Kahve Ismarla (Dodo Payments) */}
+            <a
+              href="https://checkout.dodopayments.com/buy/pdt_0NqNaai72jdmYgFMZLV0j?quantity=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex items-center gap-1.5 px-2 py-1 text-xs font-semibold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-md transition-all hover:scale-105 active:scale-95 shadow-xs"
+              title="Geliştiriciye bir kahve ısmarla (Dodo Payments)"
+            >
+              <Coffee size={13} className="text-rose-400" />
+              <span className="hidden lg:inline">Kahve Ismarla</span>
+            </a>
 
             <button
               onClick={onNewNote}

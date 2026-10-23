@@ -12,7 +12,9 @@ import {
   Eye,
   FolderOpen,
   MousePointer,
-  HelpCircle
+  HelpCircle,
+  Coffee,
+  ExternalLink
 } from 'lucide-react';
 
 export interface ShortcutItem {
@@ -442,6 +444,27 @@ export const ShortcutsHelpModal: React.FC<ShortcutsHelpModalProps> = ({
               </div>
             ))
           )}
+        </div>
+
+        {/* Support & Coffee Callout */}
+        <div className="mx-6 mb-3 p-3.5 rounded-xl bg-gradient-to-r from-rose-950/25 via-[#181822] to-[#14141a] border border-rose-500/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">☕</span>
+            <div>
+              <h4 className="text-xs font-semibold text-rose-300">Not Defteri Pro'yu beğendiniz mi?</h4>
+              <p className="text-[11px] text-zinc-400">Geliştiriciye bir kahve ısmarlayarak projeye destek olabilirsiniz.</p>
+            </div>
+          </div>
+          <a
+            href="https://checkout.dodopayments.com/buy/pdt_0NqNaai72jdmYgFMZLV0j?quantity=1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-1.5 bg-rose-500 hover:bg-rose-400 text-white font-semibold rounded-lg text-xs transition-colors shrink-0 flex items-center gap-1.5 shadow-sm shadow-rose-950 hover:scale-105"
+          >
+            <Coffee size={13} />
+            <span>Kahve Ismarla</span>
+            <ExternalLink size={11} className="opacity-70" />
+          </a>
         </div>
 
         {/* Modal Footer / Helpful Tip */}

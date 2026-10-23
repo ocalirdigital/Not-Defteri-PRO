@@ -266,7 +266,15 @@ export const FolderSidebar: React.FC<FolderSidebarProps> = ({
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Yerel Kayıt Aktif" />
           <span className="text-[10px] text-zinc-400 font-mono tracking-tight">ocalir labs</span>
         </div>
-        <span className="text-[10px] text-zinc-600 font-mono">v1.0</span>
+        <a
+          href="https://checkout.dodopayments.com/buy/pdt_0NqNaai72jdmYgFMZLV0j?quantity=1"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] text-rose-300/90 hover:text-rose-200 hover:underline flex items-center gap-1 font-medium transition-colors"
+          title="Geliştiriciye bir kahve ısmarla"
+        >
+          ☕ Kahve Ismarla
+        </a>
       </div>
     </aside>
   );
