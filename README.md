@@ -11,6 +11,12 @@ Modern, minimalist ve güçlü bir masaüstü seviyesinde not alma ve görsel tu
 
 ---
 
+<div align="center">
+  <img src="./public/screenshot.png" alt="Not Defteri Pro Ekran Görüntüsü" width="100%" style="border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,0.6);" />
+</div>
+
+---
+
 ## 🌐 Web Sitesi / Canlı Yayına Alma (Vercel)
 
 Not Defteri Pro, **%100 istemci taraflı (client-side SPA)** olarak tasarlanmıştır. Vercel, Netlify veya GitHub Pages üzerinde sıfır sunucu maliyetiyle tek tıkla canlıya alıp istediğiniz cihazdan web sitesi olarak kullanabilirsiniz:
